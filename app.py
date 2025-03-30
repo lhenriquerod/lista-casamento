@@ -33,11 +33,11 @@ def init_db():
     c.execute('''
         CREATE TABLE IF NOT EXISTS contribuicoes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            presente_id INTEGER NOT NULL,
             nome_convidado TEXT,
-            cotas INTEGER NOT NULL,
-            valor_total REAL NOT NULL,
-            data TEXT NOT NULL
+            presente_id INTEGER,
+            cotas INTEGER,
+            valor_total REAL,
+            data TEXT
         )
     ''')
     conn.commit()
@@ -262,4 +262,6 @@ def gerar_payload_pix(valor: float) -> str:
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True, use_reloader=False)
+    app.run(debug=True)
+else:
+    init_db()
