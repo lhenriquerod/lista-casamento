@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Adicionar Presente</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="max-w-xl mx-auto p-6 bg-white mt-10 rounded shadow">
+        <h1 class="text-2xl font-bold mb-4 text-purple-700">Adicionar novo presente</h1>
+
+        <form method="post" class="space-y-4">
+            <label class="block">
+                Nome do item:
+                <input type="text" name="nome" class="w-full mt-1 p-2 border rounded" required>
+            </label>
+
+            <label class="block">
+                Valor total do item (R$):
+                <input type="number" name="valor_total" step="0.01" class="w-full mt-1 p-2 border rounded" required>
+            </label>
+
+            <label class="block">
+                Valor de cada cota (R$):
+                <input type="number" name="valor_cota" step="0.01" class="w-full mt-1 p-2 border rounded" required>
+            </label>
+
+            <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                Adicionar presente
+            </button>
+
+            <label class="block">
+                URL da imagem:
+                <input type="url" name="imagem_url" class="w-full mt-1 p-2 border rounded">
+            </label>
+        </form>
+
+        <div class="mt-4 text-sm">
+            <a href="{{ url_for('index') }}" class="text-purple-600 hover:underline">← Voltar para a lista</a>
+        </div>
+    </div>
+</body>
+</html>

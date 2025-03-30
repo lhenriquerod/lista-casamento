@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Presentes</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="flex justify-end max-w-4xl mx-auto p-4 text-sm">
+        {% if session.get('logado') %}
+            <a href="{{ url_for('logout') }}" class="text-purple-600 hover:underline">Sair (admin)</a>
+        {% else %}
+            <a href="{{ url_for('login') }}" class="text-purple-600 hover:underline">🔐 Login admin</a>
+        {% endif %}
+    </div>
+    <div class="max-w-4xl mx-auto p-4">
+        <h1 class="text-3xl font-bold text-center text-purple-700 mb-8">Lista de Cotas de Presentes para a Casa Nova 🏡</h1>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="mb-4 bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded">
+                {{ messages[0] }}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for presente in presentes %}
+            <div class="bg-white rounded shadow p-4 flex flex-col">
+                <img src="{{ presente[6] }}" alt="Imagem do presente" class="w-full h-48 object-contain rounded mb-2">
+                <h2 class="text-xl font-semibold text-gray-800">{{ presente[1] }}</h2>
+                <p>Valor total: R$ {{ presente[2] }}</p>
+                <p>Valor da cota: R$ {{ presente[3] }}</p>
+                <p>Cotas restantes: {{ presente[5] }}</p>
+
+                {% if presente[5] > 0 %}
+                    <a href="{{ url_for('contribuir', item_id=presente[0]) }}" class="mt-4 inline-block bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-center">
+                        Contribuir
+                    </a>
+                {% else %}
+                    <p class="mt-4 text-green-600 font-semibold text-center">🎉 Cotas esgotadas!</p>
+                {% endif %}
+
+                {% if session.get('logado') %}
+                <form action="{{ url_for('deletar_presente', item_id=presente[0]) }}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir este presente?');">
+                    <button type="submit" class="mt-2 text-sm text-red-600 hover:underline">🗑️ Excluir</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-8 text-center">
+            <a href="{{ url_for('add_presente') }}" class="text-sm text-purple-600 hover:underline">+ Adicionar presente (admin)</a>
+        </div>
+    </div>
+</body>
+</html>
