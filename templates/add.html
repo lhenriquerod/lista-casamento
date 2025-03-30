@@ -9,6 +9,14 @@
     <div class="max-w-xl mx-auto p-6 bg-white mt-10 rounded shadow">
         <h1 class="text-2xl font-bold mb-4 text-purple-700">Adicionar novo presente</h1>
 
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="mb-4 bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded">
+                {{ messages[0] }}
+            </div>
+          {% endif %}
+        {% endwith %}
+
         <form method="post" class="space-y-4">
             <label class="block">
                 Nome do item:
@@ -25,14 +33,14 @@
                 <input type="number" name="valor_cota" step="0.01" class="w-full mt-1 p-2 border rounded" required>
             </label>
 
-            <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
-                Adicionar presente
-            </button>
-
             <label class="block">
                 URL da imagem:
                 <input type="url" name="imagem_url" class="w-full mt-1 p-2 border rounded">
             </label>
+
+            <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                Adicionar presente
+            </button>
         </form>
 
         <div class="mt-4 text-sm">

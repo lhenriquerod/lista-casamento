@@ -135,12 +135,16 @@ def contribuir(item_id):
 
 @app.route('/admin/add', methods=['GET', 'POST'])
 def add_presente():
+    if not session.get('logado'):
+        flash("Você precisa estar logado como admin para acessar essa página.")
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         nome = request.form['nome']
         valor_total = float(request.form['valor_total'])
         valor_cota = float(request.form['valor_cota'])
-        imagem_url = request.form.get('imagem_url', '')
         cotas_total = int(valor_total / valor_cota)
+        imagem_url = request.form.get('imagem_url')
 
         conn = sqlite3.connect(DATABASE)
         c = conn.cursor()
@@ -150,7 +154,10 @@ def add_presente():
         ''', (nome, valor_total, valor_cota, cotas_total, cotas_total, imagem_url))
         conn.commit()
         conn.close()
+
+        flash('✅ Presente adicionado com sucesso!')
         return redirect(url_for('index'))
+
     return render_template('add.html')
 
 @app.route('/admin/contribuicoes')
@@ -229,7 +236,6 @@ def gerar_payload_pix(valor: float) -> str:
     cidade = "MATAO"
     valor_str = f"{valor:.2f}"
 
-    # GUI: Banco Central (fixo)
     gui = "BR.GOV.BCB.PIX"
     gui_field = f"00{len(gui):02d}{gui}"
     key_field = f"01{len(pix_key):02d}{pix_key}"
@@ -252,7 +258,6 @@ def gerar_payload_pix(valor: float) -> str:
         + "6304"          # CRC16
     )
 
-    # Calcula o CRC16 (CCITT-FALSE)
     crc16 = mkCrcFun('crc-ccitt-false')
     crc = format(crc16(payload_sem_crc.encode('utf-8')), '04X')
 
