@@ -15,7 +15,7 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-USE_SQLITE = os.getenv("USE_SQLITE", "False").lower() == "true"
+#USE_SQLITE = os.getenv("USE_SQLITE", "False").lower() == "true"
 
 app.permanent_session_lifetime = timedelta(days=1)
 
