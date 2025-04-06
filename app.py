@@ -1,8 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, request, session, flash, make_response
-import csv
 import os
 from dotenv import load_dotenv
-import sqlite3
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from io import BytesIO
@@ -14,21 +12,10 @@ import crcmod
 load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-
-#USE_SQLITE = os.getenv("USE_SQLITE", "False").lower() == "true"
-
 app.permanent_session_lifetime = timedelta(days=1)
 
-
 def get_connection():
-    if USE_SQLITE:
-        os.makedirs("db", exist_ok=True)
-        conn = sqlite3.connect("db/presentes.db")
-        conn.row_factory = sqlite3.Row
-        return conn
-    else:
-        return psycopg2.connect(os.getenv("DATABASE_URL"), cursor_factory=RealDictCursor)
-
+    return psycopg2.connect(os.getenv("DATABASE_URL"), cursor_factory=RealDictCursor)
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def login():
@@ -37,7 +24,7 @@ def login():
         if senha == os.getenv("ADMIN_PASSWORD"):
             session.permanent = True
             session['logado'] = True
-            return redirect(url_for('painel_admin'))  # Corrigido aqui
+            return redirect(url_for('painel_admin'))
         else:
             flash('Senha incorreta!')
             return redirect(url_for('login'))
@@ -54,7 +41,6 @@ def logout():
     session.pop('logado', None)
     return redirect(url_for('index'))
 
-
 @app.route('/admin/delete/<int:item_id>', methods=['POST'])
 def deletar_presente(item_id):
     if not session.get('logado'):
@@ -63,37 +49,27 @@ def deletar_presente(item_id):
     try:
         conn = get_connection()
         c = conn.cursor()
-
-        if USE_SQLITE:
-            c.execute('SELECT COUNT(*) FROM contribuicoes WHERE presente_id = ?', (item_id,))
-            total = c.fetchone()[0]
-        else:
-            c.execute('SELECT COUNT(*) FROM contribuicoes WHERE presente_id = %s', (item_id,))
-            total = c.fetchone()['count']
+        c.execute('SELECT COUNT(*) FROM contribuicoes WHERE presente_id = %s', (item_id,))
+        total = c.fetchone()['count']
 
         if total > 0:
             flash('❌ Este presente já recebeu contribuições e não pode ser excluído.')
         else:
-            if USE_SQLITE:
-                c.execute('DELETE FROM presentes WHERE id = ?', (item_id,))
-            else:
-                c.execute('DELETE FROM presentes WHERE id = %s', (item_id,))
+            c.execute('DELETE FROM presentes WHERE id = %s', (item_id,))
             flash('✅ Presente excluído com sucesso!')
 
         conn.commit()
         conn.close()
 
     except Exception as e:
-        print("Erro:", e)  # útil para debug
+        print("Erro:", e)
         flash('⚠️ Erro ao acessar o banco de dados.')
 
     return redirect(url_for('index_presentes'))
 
-
 @app.route('/')
 def index():
     return render_template('index.html')
-
 
 @app.route('/presentes')
 def index_presentes():
@@ -108,38 +84,21 @@ def index_presentes():
 def confirmar_presenca():
     if request.method == 'POST':
         nome = request.form['nome']
-
         conn = get_connection()
         c = conn.cursor()
-
-        if USE_SQLITE:
-            c.execute('''
-                CREATE TABLE IF NOT EXISTS confirmacoes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nome TEXT NOT NULL,
-                    data TEXT
-                )
-            ''')
-            c.execute('''
-                INSERT INTO confirmacoes (nome, data)
-                VALUES (?, ?)
-            ''', (nome, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        else:
-            c.execute('''
-                CREATE TABLE IF NOT EXISTS confirmacoes (
-                    id SERIAL PRIMARY KEY,
-                    nome TEXT NOT NULL,
-                    data TEXT
-                )
-            ''')
-            c.execute('''
-                INSERT INTO confirmacoes (nome, data)
-                VALUES (%s, %s)
-            ''', (nome, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS confirmacoes (
+                id SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL,
+                data TEXT
+            )
+        ''')
+        c.execute('''
+            INSERT INTO confirmacoes (nome, data)
+            VALUES (%s, %s)
+        ''', (nome, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         conn.commit()
         conn.close()
-
         flash('✅ Presença confirmada com sucesso! Obrigado ❤️')
         return redirect(url_for('index'))
 
@@ -158,17 +117,11 @@ def ver_confirmacoes():
 
     return render_template('confirmacoes.html', confirmacoes=confirmacoes)
 
-
 @app.route('/contribuir/<int:item_id>', methods=['GET', 'POST'])
 def contribuir(item_id):
     conn = get_connection()
     c = conn.cursor()
-
-    if USE_SQLITE:
-        c.execute('SELECT * FROM presentes WHERE id = ?', (item_id,))
-    else:
-        c.execute('SELECT * FROM presentes WHERE id = %s', (item_id,))
-    
+    c.execute('SELECT * FROM presentes WHERE id = %s', (item_id,))
     presente = c.fetchone()
 
     if request.method == 'POST':
@@ -178,19 +131,11 @@ def contribuir(item_id):
         valor_total = cotas_compradas * presente['valor_cota']
 
         if novas_cotas >= 0:
-            if USE_SQLITE:
-                c.execute('UPDATE presentes SET cotas_restantes = ? WHERE id = ?', (novas_cotas, item_id))
-                c.execute('''
-                    INSERT INTO contribuicoes (presente_id, nome_convidado, cotas, valor_total, data)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', (item_id, nome_convidado, cotas_compradas, valor_total, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-            else:
-                c.execute('UPDATE presentes SET cotas_restantes = %s WHERE id = %s', (novas_cotas, item_id))
-                c.execute('''
-                    INSERT INTO contribuicoes (presente_id, nome_convidado, cotas, valor_total, data)
-                    VALUES (%s, %s, %s, %s, %s)
-                ''', (item_id, nome_convidado, cotas_compradas, valor_total, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-            
+            c.execute('UPDATE presentes SET cotas_restantes = %s WHERE id = %s', (novas_cotas, item_id))
+            c.execute('''
+                INSERT INTO contribuicoes (presente_id, nome_convidado, cotas, valor_total, data)
+                VALUES (%s, %s, %s, %s, %s)
+            ''', (item_id, nome_convidado, cotas_compradas, valor_total, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
             conn.commit()
 
         payload_pix = gerar_payload_pix(valor_total)
@@ -250,27 +195,14 @@ def deletar_contribuicao(id):
 
     conn = get_connection()
     c = conn.cursor()
-
-    # Recuperar info da contribuição antes de deletar
-    if USE_SQLITE:
-        c.execute('SELECT presente_id, cotas FROM contribuicoes WHERE id = ?', (id,))
-    else:
-        c.execute('SELECT presente_id, cotas FROM contribuicoes WHERE id = %s', (id,))
-    
+    c.execute('SELECT presente_id, cotas FROM contribuicoes WHERE id = %s', (id,))
     contrib = c.fetchone()
 
     if contrib:
         presente_id = contrib['presente_id']
         cotas_remover = contrib['cotas']
-
-        # Atualizar cotas_restantes no presente
-        if USE_SQLITE:
-            c.execute('UPDATE presentes SET cotas_restantes = cotas_restantes + ? WHERE id = ?', (cotas_remover, presente_id))
-            c.execute('DELETE FROM contribuicoes WHERE id = ?', (id,))
-        else:
-            c.execute('UPDATE presentes SET cotas_restantes = cotas_restantes + %s WHERE id = %s', (cotas_remover, presente_id))
-            c.execute('DELETE FROM contribuicoes WHERE id = %s', (id,))
-
+        c.execute('UPDATE presentes SET cotas_restantes = cotas_restantes + %s WHERE id = %s', (cotas_remover, presente_id))
+        c.execute('DELETE FROM contribuicoes WHERE id = %s', (id,))
         conn.commit()
         flash("❌ Contribuição excluída com sucesso e cotas revertidas.")
     else:
@@ -308,18 +240,10 @@ def add_presente():
 
         conn = get_connection()
         c = conn.cursor()
-
-        if USE_SQLITE:
-            c.execute('''
-                INSERT INTO presentes (nome, valor_total, valor_cota, cotas_total, cotas_restantes, imagem_url)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (nome, valor_total, valor_cota, cotas_total, cotas_total, imagem_url))
-        else:
-            c.execute('''
-                INSERT INTO presentes (nome, valor_total, valor_cota, cotas_total, cotas_restantes, imagem_url)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            ''', (nome, valor_total, valor_cota, cotas_total, cotas_total, imagem_url))
-
+        c.execute('''
+            INSERT INTO presentes (nome, valor_total, valor_cota, cotas_total, cotas_restantes, imagem_url)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        ''', (nome, valor_total, valor_cota, cotas_total, cotas_total, imagem_url))
         conn.commit()
         conn.close()
 
@@ -327,7 +251,6 @@ def add_presente():
         return redirect(url_for('index_presentes'))
 
     return render_template('add.html')
-
 
 @app.route('/admin/contribuicoes')
 def ver_contribuicoes():
@@ -352,7 +275,6 @@ def ver_contribuicoes():
     conn.close()
 
     return render_template('contribuicoes.html', contribuicoes=contribuicoes)
-
 
 @app.route('/admin/exportar')
 def exportar_contribuicoes():
@@ -399,7 +321,6 @@ def exportar_contribuicoes():
 def informacoes_gerais():
     return render_template('informacoes_gerais.html')
 
-
 def gerar_payload_pix(valor: float) -> str:
     pix_key = "43130257829"
     nome = "LUCAS HENRIQUE R RAUGI"
@@ -433,42 +354,5 @@ def gerar_payload_pix(valor: float) -> str:
 
     return payload_sem_crc + crc
 
-
 if __name__ == '__main__':
-    if USE_SQLITE:
-        conn = get_connection()
-        c = conn.cursor()
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS presentes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nome TEXT NOT NULL,
-                valor_total REAL NOT NULL,
-                valor_cota REAL NOT NULL,
-                cotas_total INTEGER NOT NULL,
-                cotas_restantes INTEGER NOT NULL,
-                imagem_url TEXT
-            )
-        ''')
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS contribuicoes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nome_convidado TEXT,
-                presente_id INTEGER,
-                cotas INTEGER,
-                valor_total REAL,
-                data TEXT
-            )
-        ''')
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS confirmacoes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nome TEXT NOT NULL,
-                acompanhantes INTEGER,
-                nomes_acompanhantes TEXT,
-                data TEXT
-            )
-        ''')
-        conn.commit()
-        conn.close()
-
     app.run(debug=True)
