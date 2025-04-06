@@ -3,9 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <title>Login Admin</title>
+    <style>
+        .bg-evento {
+            background-image: url("{{ url_for('static', filename='img/fundo_vazio.png') }}");
+            background-repeat: no-repeat;
+            background-position: top center;
+            background-size: cover;
+            background-color: #f9fafb;
+            min-height: 100vh;
+        }
+    </style>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-evento font-sans">
     <div class="max-w-md mx-auto p-6 bg-white mt-20 rounded shadow text-center">
         <h1 class="text-2xl font-bold mb-4 text-purple-700">🔒 Login Administrativo</h1>
         <form method="post" class="space-y-4">

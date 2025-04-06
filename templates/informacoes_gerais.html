@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Informações Gerais</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+    <!-- Fonte elegante -->
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Great Vibes', cursive;
+        }
+
+        .bg-evento {
+            background-image: url("{{ url_for('static', filename='img/fundo_vazio.png') }}");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: cover;
+            background-color: #f9fafb;
+        }
+    </style>
+</head>
+<body class="bg-evento flex flex-col min-h-screen justify-between">
+
+    <!-- Conteúdo principal -->
+    <main class="flex-grow flex items-center justify-center px-4 py-10">
+        <div class="max-w-2xl w-full bg-white/90 p-8 rounded shadow backdrop-blur-sm text-gray-800 font-sans">
+            <h1 class="text-3xl text-green-700 font-bold mb-6 text-center">Informações Gerais</h1>
+
+            <p class="text-lg leading-relaxed mb-4 text-center">
+                O nosso <strong>Chá de Casa Nova</strong> será <span class="text-green-700 font-semibold">comunitário</span>!<br>
+                Cada pessoa deve trazer seu <strong>kit churrasco</strong> e suas <strong>bebidas</strong> preferidas. 🥩🍻
+            </p>
+
+            <p class="text-lg leading-relaxed mb-4 text-center">
+                O evento acontecerá no <strong>Vale do Sol</strong> e começará <strong>ao meio-dia</strong> no dia <strong>25 de maio de 2025</strong>.
+            </p>
+
+            <!-- Seção do Cardápio -->
+            <div class="mt-6 bg-green-50 p-4 rounded border border-green-200 text-center">
+                <h2 class="text-xl text-green-700 font-semibold mb-2">🍽️ Cardápio do Evento</h2>
+                <ul class="text-gray-800 text-base leading-relaxed space-y-1 text-left">
+                    <li>• Arroz Branco</li>
+                    <li>• Feijão Gordo</li>
+                    <li>• Farofa Temperada</li>
+                    <li>• Salada Tropical</li>
+                    <li>• Docinhos Variados</li>
+                    <li>• Um Delicioso Bolo 🎂</li>
+                </ul>
+                
+            </div>
+
+            <p class="text-lg leading-relaxed text-center">
+                Por favor, não se esqueça de confirmar sua presença para que possamos nos organizar melhor! 💚
+            </p>
+
+            <div class="mt-8 flex flex-col md:flex-row justify-center items-center gap-4">
+                <a href="{{ url_for('index') }}" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow-md transition">
+                    ← Voltar ao início
+                </a>
+                <a href="{{ url_for('confirmar_presenca') }}" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow-md transition">
+                    Confirmar Presença
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Rodapé fixo -->
+    <footer class="text-center text-gray-800 font-sans text-base leading-relaxed mb-6">
+        📍 <strong>Endereço:</strong> R. José Gonçalves - Matão/SP<br>
+        <a href="https://maps.app.goo.gl/RAf6DKp6LMcNehpz5" target="_blank" class="text-purple-700 hover:underline">
+            Ver no Google Maps
+        </a>
+    </footer>
+
+</body>
+</html>

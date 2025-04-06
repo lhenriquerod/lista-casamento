@@ -2,56 +2,73 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Contribuições</title>
+    <title>Contribuições Recebidas</title>
+    <style>
+        .bg-evento {
+            background-image: url("{{ url_for('static', filename='img/fundo_vazio.png') }}");
+            background-repeat: no-repeat;
+            background-position: top center;
+            background-size: cover;
+            background-color: #f9fafb;
+            min-height: 100vh;
+        }
+    </style>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-evento font-sans">
     <div class="max-w-5xl mx-auto p-6 bg-white mt-10 rounded shadow">
-
-        <div class="flex justify-between items-center mb-4 text-sm">
-            <a href="{{ url_for('logout') }}" class="text-purple-600 hover:underline">Sair</a>
-            <a href="{{ url_for('exportar_contribuicoes') }}" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded">
+        <div class="flex justify-between items-center mb-4">
+            <a href="{{ url_for('logout') }}" class="text-sm text-purple-600 hover:underline">Sair</a>
+            <a href="{{ url_for('exportar_contribuicoes') }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">
                 Exportar CSV
             </a>
         </div>
 
-        <div class="text-right text-sm mb-4">
-            <a href="{{ url_for('logout') }}" class="text-purple-600 hover:underline">Sair</a>
-        </div>
-
-        <h1 class="text-3xl font-bold text-purple-700 mb-6 text-center">🎁 Contribuições Recebidas</h1>
+        <h1 class="text-2xl font-bold text-purple-700 mb-6 text-center">🎁 Contribuições Recebidas</h1>
 
         {% if contribuicoes %}
-            <table class="w-full table-auto border-collapse">
-                <thead>
-                    <tr class="bg-purple-100 text-left text-sm text-gray-700">
-                        <th class="px-4 py-2">#</th>
-                        <th class="px-4 py-2">Convidado</th>
-                        <th class="px-4 py-2">Presente</th>
-                        <th class="px-4 py-2">Cotas</th>
-                        <th class="px-4 py-2">Valor (R$)</th>
-                        <th class="px-4 py-2">Data</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in contribuicoes %}
-                    <tr class="border-t hover:bg-gray-50 text-sm">
-                        <td class="px-4 py-2">{{ item[0] }}</td>
-                        <td class="px-4 py-2">{{ item[1] or 'Anônimo' }}</td>
-                        <td class="px-4 py-2">{{ item[2] }}</td>
-                        <td class="px-4 py-2">{{ item[3] }}</td>
-                        <td class="px-4 py-2">R$ {{ item[4] }}</td>
-                        <td class="px-4 py-2">{{ item[5] }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <table class="w-full table-auto border-collapse text-sm">
+            <thead>
+                <tr class="bg-purple-100 text-left text-gray-700">
+                    <th class="px-4 py-2">#</th>
+                    <th class="px-4 py-2">Convidado</th>
+                    <th class="px-4 py-2">Presente</th>
+                    <th class="px-4 py-2">Cotas</th>
+                    <th class="px-4 py-2">Valor (R$)</th>
+                    <th class="px-4 py-2">Data</th>
+                    <th class="px-4 py-2 space-x-2">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in contribuicoes %}
+                <tr class="border-t hover:bg-gray-50">
+                    <td class="px-4 py-2">{{ item.id }}</td>
+                    <td class="px-4 py-2">{{ item.nome_convidado or 'Anônimo' }}</td>
+                    <td class="px-4 py-2">{{ item.nome }}</td>
+                    <td class="px-4 py-2">{{ item.cotas }}</td>
+                    <td class="px-4 py-2">R$ {{ "%.2f"|format(item.valor_total) }}</td>
+                    <td class="px-4 py-2">{{ item.data }}</td>
+                    <td class="px-4 py-2 space-x-2">
+                        <!-- Botão de excluir -->
+                        <td class="px-4 py-2">
+                            <a href="{{ url_for('editar_contribuicao', id=item.id) }}" class="text-blue-600 hover:underline text-sm">✏️ Editar</a>
+                            <form method="POST" action="{{ url_for('deletar_contribuicao', id=item.id) }}" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir?');">
+                                <button type="submit" class="text-red-600 hover:underline text-sm ml-2">🗑️ Excluir</button>
+                            </form>
+                        </td>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
         {% else %}
-            <p class="text-center text-gray-600">Nenhuma contribuição registrada ainda.</p>
+        <p class="text-center text-gray-600">Nenhuma contribuição registrada até agora.</p>
         {% endif %}
 
         <div class="mt-6 text-center">
-            <a href="{{ url_for('index') }}" class="text-purple-600 hover:underline">← Voltar para a lista de presentes</a>
+            <a href="{{ url_for('index_presentes') }}" class="text-purple-600 hover:underline text-sm">
+                ← Voltar para a lista de presentes
+            </a>
         </div>
     </div>
 </body>

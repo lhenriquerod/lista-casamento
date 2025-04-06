@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel do Admin</title>
+    <style>
+        .bg-evento {
+            background-image: url("{{ url_for('static', filename='img/fundo_vazio.png') }}");
+            background-repeat: no-repeat;
+            background-position: top center;
+            background-size: cover;
+            background-color: #f9fafb;
+            min-height: 100vh;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-evento font-sans">
+    <div class="max-w-2xl mx-auto p-6 bg-white mt-10 rounded shadow text-center">
+
+        <h1 class="text-3xl font-bold text-purple-700 mb-6">Painel Administrativo</h1>
+
+        <div class="space-y-4 text-left">
+            <a href="{{ url_for('ver_contribuicoes') }}" class="block bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded">
+                📦 Ver contribuições
+            </a>
+            <a href="{{ url_for('ver_confirmacoes') }}" class="block bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded">
+                ✅ Ver confirmações de presença
+            </a>
+            <a href="{{ url_for('index_presentes') }}" class="block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded">
+                🎁 Ver lista de presentes
+            </a>
+            <a href="{{ url_for('add_presente') }}" class="block bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded">
+                ➕ Adicionar presente
+            </a>
+        </div>
+
+        <div class="mt-6 text-sm">
+            <a href="{{ url_for('logout') }}" class="text-purple-600 hover:underline">← Sair do painel</a>
+        </div>
+
+    </div>
+</body>
+</html>

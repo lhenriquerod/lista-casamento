@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmações de Presença</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+    <style>
+        .bg-evento {
+            background-image: url("{{ url_for('static', filename='img/fundo_vazio.png') }}");
+            background-repeat: no-repeat;
+            background-position: top center;
+            background-size: cover;
+            background-color: #f9fafb;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="max-w-5xl mx-auto p-6 bg-white mt-10 rounded shadow">
+        <h1 class="text-2xl font-bold text-purple-700 mb-6 text-center">✅ Lista de Confirmados</h1>
+
+        {% if confirmacoes %}
+            <table class="w-full table-auto border-collapse">
+                <thead>
+                    <tr class="bg-purple-100 text-left text-sm text-gray-700">
+                        <th class="px-4 py-2">#</th>
+                        <th class="px-4 py-2">Nome</th>
+                        <th class="px-4 py-2">Data</th>
+                        <th class="px-4 py-2 text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in confirmacoes %}
+                    <tr class="border-t hover:bg-gray-50 text-sm">
+                        <td class="px-4 py-2">{{ item.id }}</td>
+                        <td class="px-4 py-2">{{ item.nome }}</td>
+                        <td class="px-4 py-2">{{ item.data }}</td>
+                        <td class="px-4 py-2 text-center">
+                            <form action="{{ url_for('deletar_confirmacao', id=item.id) }}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir esta confirmação?');">
+                                <button class="text-red-600 hover:underline text-sm" type="submit">🗑️ Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="text-center text-gray-600">Nenhuma confirmação ainda.</p>
+        {% endif %}
+
+        <div class="mt-6 text-center">
+            <a href="{{ url_for('index') }}" class="text-purple-600 hover:underline">← Voltar para o início</a>
+        </div>
+    </div>
+</body>
+</html>
