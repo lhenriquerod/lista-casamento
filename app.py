@@ -1,5 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, request, session, flash, make_response
 import os
+import csv
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -12,11 +13,49 @@ import crcmod
 load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-
 app.permanent_session_lifetime = timedelta(days=1)
 
 def get_connection():
     return psycopg2.connect(os.getenv("DATABASE_URL"), cursor_factory=RealDictCursor)
+
+def criar_tabelas_postgres():
+    try:
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS presentes (
+                id SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL,
+                valor_total REAL NOT NULL,
+                valor_cota REAL NOT NULL,
+                cotas_total INTEGER NOT NULL,
+                cotas_restantes INTEGER NOT NULL,
+                imagem_url TEXT
+            )
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS contribuicoes (
+                id SERIAL PRIMARY KEY,
+                nome_convidado TEXT,
+                presente_id INTEGER,
+                cotas INTEGER,
+                valor_total REAL,
+                data TEXT
+            )
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS confirmacoes (
+                id SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL,
+                data TEXT
+            )
+        ''')
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("Erro ao criar tabelas:", e)
+
+criar_tabelas_postgres()
 
 @app.route('/')
 def index():
@@ -47,10 +86,6 @@ def confirmar_presenca():
         return redirect(url_for('index'))
     return render_template('confirmar_presenca.html')
 
-@app.route('/informacoes-gerais')
-def informacoes_gerais():
-    return render_template('informacoes_gerais.html')
-
 @app.route('/admin/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -64,16 +99,16 @@ def login():
             return redirect(url_for('login'))
     return render_template('login.html')
 
-@app.route('/admin/logout')
-def logout():
-    session.pop('logado', None)
-    return redirect(url_for('index'))
-
 @app.route('/admin/painel')
 def painel_admin():
     if not session.get('logado'):
         return redirect(url_for('login'))
     return render_template('painel_admin.html')
+
+@app.route('/admin/logout')
+def logout():
+    session.pop('logado', None)
+    return redirect(url_for('index'))
 
 @app.route('/admin/confirmacoes')
 def ver_confirmacoes():
@@ -85,27 +120,6 @@ def ver_confirmacoes():
     confirmacoes = c.fetchall()
     conn.close()
     return render_template('confirmacoes.html', confirmacoes=confirmacoes)
-
-@app.route('/admin/delete/<int:item_id>', methods=['POST'])
-def deletar_presente(item_id):
-    if not session.get('logado'):
-        return redirect(url_for('login'))
-    try:
-        conn = get_connection()
-        c = conn.cursor()
-        c.execute('SELECT COUNT(*) FROM contribuicoes WHERE presente_id = %s', (item_id,))
-        total = c.fetchone()['count']
-        if total > 0:
-            flash('❌ Este presente já recebeu contribuições e não pode ser excluído.')
-        else:
-            c.execute('DELETE FROM presentes WHERE id = %s', (item_id,))
-            flash('✅ Presente excluído com sucesso!')
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print("Erro:", e)
-        flash('⚠️ Erro ao acessar o banco de dados.')
-    return redirect(url_for('index_presentes'))
 
 @app.route('/admin/deletar-confirmacao/<int:id>', methods=['POST'])
 def deletar_confirmacao(id):
@@ -178,6 +192,130 @@ def contribuir(item_id):
     conn.close()
     return render_template('contribuir.html', presente=presente)
 
+@app.route('/admin/contribuicoes')
+def ver_contribuicoes():
+    if not session.get('logado'):
+        return redirect(url_for('login'))
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT 
+            contribuicoes.id,
+            contribuicoes.nome_convidado,
+            presentes.nome,
+            contribuicoes.cotas,
+            contribuicoes.valor_total,
+            contribuicoes.data
+        FROM contribuicoes
+        JOIN presentes ON contribuicoes.presente_id = presentes.id
+        ORDER BY contribuicoes.data DESC
+    ''')
+    contribuicoes = c.fetchall()
+    conn.close()
+    return render_template('contribuicoes.html', contribuicoes=contribuicoes)
+
+@app.route('/admin/editar-contribuicao/<int:id>', methods=['GET', 'POST'])
+def editar_contribuicao(id):
+    if not session.get('logado'):
+        return redirect(url_for('login'))
+    conn = get_connection()
+    c = conn.cursor()
+    if request.method == 'POST':
+        nome = request.form['nome']
+        cotas = int(request.form['cotas'])
+        valor_total = float(request.form['valor_total'])
+        c.execute('''
+            UPDATE contribuicoes
+            SET nome_convidado = %s, cotas = %s, valor_total = %s
+            WHERE id = %s
+        ''', (nome, cotas, valor_total, id))
+        conn.commit()
+        conn.close()
+        flash("✅ Contribuição atualizada com sucesso!")
+        return redirect(url_for('ver_contribuicoes'))
+    c.execute('SELECT * FROM contribuicoes WHERE id = %s', (id,))
+    contribuicao = c.fetchone()
+    conn.close()
+    return render_template('editar_contribuicao.html', contribuicao=contribuicao)
+
+@app.route('/admin/deletar-contribuicao/<int:id>', methods=['POST'])
+def deletar_contribuicao(id):
+    if not session.get('logado'):
+        return redirect(url_for('login'))
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT presente_id, cotas FROM contribuicoes WHERE id = %s', (id,))
+    contrib = c.fetchone()
+    if contrib:
+        presente_id = contrib['presente_id']
+        cotas_remover = contrib['cotas']
+        c.execute('UPDATE presentes SET cotas_restantes = cotas_restantes + %s WHERE id = %s', (cotas_remover, presente_id))
+        c.execute('DELETE FROM contribuicoes WHERE id = %s', (id,))
+        conn.commit()
+        flash("❌ Contribuição excluída com sucesso e cotas revertidas.")
+    else:
+        flash("⚠️ Contribuição não encontrada.")
+    conn.close()
+    return redirect(url_for('ver_contribuicoes'))
+
+@app.route('/admin/delete/<int:item_id>', methods=['POST'])
+def deletar_presente(item_id):
+    if not session.get('logado'):
+        return redirect(url_for('login'))
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT COUNT(*) FROM contribuicoes WHERE presente_id = %s', (item_id,))
+    total = c.fetchone()['count']
+    if total > 0:
+        flash('❌ Este presente já recebeu contribuições e não pode ser excluído.')
+    else:
+        c.execute('DELETE FROM presentes WHERE id = %s', (item_id,))
+        flash('✅ Presente excluído com sucesso!')
+    conn.commit()
+    conn.close()
+    return redirect(url_for('index_presentes'))
+
+@app.route('/admin/exportar')
+def exportar_contribuicoes():
+    if not session.get('logado'):
+        return redirect(url_for('login'))
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT 
+            contribuicoes.id,
+            contribuicoes.nome_convidado,
+            presentes.nome,
+            contribuicoes.cotas,
+            contribuicoes.valor_total,
+            contribuicoes.data
+        FROM contribuicoes
+        JOIN presentes ON contribuicoes.presente_id = presentes.id
+        ORDER BY contribuicoes.data DESC
+    ''')
+    contribuicoes = c.fetchall()
+    conn.close()
+    output = []
+    header = ['ID', 'Convidado', 'Presente', 'Cotas', 'Valor (R$)', 'Data']
+    output.append(header)
+    for item in contribuicoes:
+        output.append([
+            item['id'],
+            item['nome_convidado'] or 'Anônimo',
+            item['nome'],
+            item['cotas'],
+            f"{item['valor_total']:.2f}".replace('.', ','),
+            item['data']
+        ])
+    response = make_response('\n'.join([','.join(map(str, row)) for row in output]))
+    response.headers['Content-Disposition'] = 'attachment; filename=contribuicoes.csv'
+    response.headers['Content-Type'] = 'text/csv'
+    return response
+
+@app.route('/informacoes-gerais')
+def informacoes_gerais():
+    return render_template('informacoes_gerais.html')
+
 def gerar_payload_pix(valor: float) -> str:
     pix_key = "43130257829"
     nome = "LUCAS HENRIQUE R RAUGI"
@@ -206,41 +344,5 @@ def gerar_payload_pix(valor: float) -> str:
     crc = format(crc16(payload_sem_crc.encode('utf-8')), '04X')
     return payload_sem_crc + crc
 
-# Criação automática de tabelas no primeiro deploy
-def criar_tabelas_postgres():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS presentes (
-            id SERIAL PRIMARY KEY,
-            nome TEXT NOT NULL,
-            valor_total REAL NOT NULL,
-            valor_cota REAL NOT NULL,
-            cotas_total INTEGER NOT NULL,
-            cotas_restantes INTEGER NOT NULL,
-            imagem_url TEXT
-        );
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS contribuicoes (
-            id SERIAL PRIMARY KEY,
-            nome_convidado TEXT,
-            presente_id INTEGER REFERENCES presentes(id),
-            cotas INTEGER,
-            valor_total REAL,
-            data TEXT
-        );
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS confirmacoes (
-            id SERIAL PRIMARY KEY,
-            nome TEXT NOT NULL,
-            data TEXT
-        );
-    ''')
-    conn.commit()
-    conn.close()
-
 if __name__ == '__main__':
-    criar_tabelas_postgres()  # Executa apenas uma vez no primeiro deploy
     app.run(debug=True)
