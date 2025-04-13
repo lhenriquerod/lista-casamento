@@ -161,12 +161,30 @@ def contribuir(item_id):
     conn = get_connection()
     c = conn.cursor()
     c.execute('SELECT * FROM presentes WHERE id = %s', (item_id,))
-    presente = c.fetchone()
+    row = c.fetchone()
+    
+    if not row:
+        conn.close()
+        flash("Presente não encontrado.")
+        return redirect(url_for('index_presentes'))
+
+    # Converter row em dicionário
+    presente = {
+        'id': row['id'],
+        'nome': row['nome'],
+        'valor_total': row['valor_total'],
+        'valor_cota': row['valor_cota'],
+        'cotas_total': row['cotas_total'],
+        'cotas_restantes': row['cotas_restantes'],
+        'imagem_url': row['imagem_url']
+    }
+
     if request.method == 'POST':
         nome_convidado = request.form.get('nome_convidado', 'Anônimo')
         cotas_compradas = int(request.form['cotas'])
         novas_cotas = presente['cotas_restantes'] - cotas_compradas
         valor_total = cotas_compradas * presente['valor_cota']
+
         if novas_cotas >= 0:
             c.execute('UPDATE presentes SET cotas_restantes = %s WHERE id = %s', (novas_cotas, item_id))
             c.execute('''
@@ -174,12 +192,14 @@ def contribuir(item_id):
                 VALUES (%s, %s, %s, %s, %s)
             ''', (item_id, nome_convidado, cotas_compradas, valor_total, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
             conn.commit()
+
         payload_pix = gerar_payload_pix(valor_total)
         qr = qrcode.make(payload_pix)
         buffer = BytesIO()
         qr.save(buffer, format="PNG")
         img_base64 = base64.b64encode(buffer.getvalue()).decode()
         conn.close()
+
         return render_template(
             'agradecimento.html',
             presente=presente,
@@ -189,6 +209,7 @@ def contribuir(item_id):
             img_base64=img_base64,
             payload_pix=payload_pix
         )
+
     conn.close()
     return render_template('contribuir.html', presente=presente)
 
