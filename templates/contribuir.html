@@ -20,7 +20,6 @@
         <h1 class="text-2xl font-bold mb-4 text-purple-700">Contribuir para: {{ presente[1] }}</h1>
         <p><strong>Valor total:</strong> R$ {{ presente[2] }}</p>
         <p><strong>Valor da cota:</strong> R$ {{ presente[3] }}</p>
-        <p><strong>Cotas restantes:</strong> {{ presente[5] }}</p>
 
         <form method="post" class="mt-6 space-y-4">
             <label class="block">
@@ -44,10 +43,6 @@
                 Confirmar contribuição
             </button>
         </form>
-
-        <div class="mt-4 text-sm">
-            <a href="{{ url_for('index') }}" class="text-purple-600 hover:underline">← Voltar para a lista</a>
-        </div>
     </div>
 </body>
 </html>
