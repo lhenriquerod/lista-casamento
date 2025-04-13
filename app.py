@@ -213,6 +213,41 @@ def contribuir(item_id):
     conn.close()
     return render_template('contribuir.html', presente=presente)
 
+@app.route('/admin/editar-presente/<int:id>', methods=['GET', 'POST'])
+def editar_presente(id):
+    if not session.get('logado'):
+        return redirect(url_for('login'))
+
+    conn = get_connection()
+    c = conn.cursor()
+
+    if request.method == 'POST':
+        valor_total = float(request.form['valor_total'])
+        valor_cota = float(request.form['valor_cota'])
+        cotas_total = int(valor_total / valor_cota)
+
+        # Buscar cotas compradas já registradas
+        c.execute('SELECT cotas_total, cotas_restantes FROM presentes WHERE id = %s', (id,))
+        presente_atual = c.fetchone()
+        cotas_compradas = presente_atual['cotas_total'] - presente_atual['cotas_restantes']
+        novas_cotas_restantes = cotas_total - cotas_compradas
+
+        c.execute('''
+            UPDATE presentes
+            SET valor_total = %s, valor_cota = %s, cotas_total = %s, cotas_restantes = %s
+            WHERE id = %s
+        ''', (valor_total, valor_cota, cotas_total, novas_cotas_restantes, id))
+        conn.commit()
+        conn.close()
+        flash("✅ Presente atualizado com sucesso!")
+        return redirect(url_for('index_presentes'))
+
+    # GET: carregar presente para exibir no formulário
+    c.execute('SELECT * FROM presentes WHERE id = %s', (id,))
+    presente = c.fetchone()
+    conn.close()
+    return render_template('editar_presente.html', presente=presente)
+
 @app.route('/admin/contribuicoes')
 def ver_contribuicoes():
     if not session.get('logado'):

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Presente</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="max-w-xl mx-auto mt-10 p-6 bg-white rounded shadow">
+        <h1 class="text-2xl font-bold mb-4 text-green-700">Editar Presente: {{ presente['nome'] }}</h1>
+        <form method="post" class="space-y-4">
+            <label class="block">
+                Valor total:
+                <input type="number" name="valor_total" step="0.01" value="{{ presente['valor_total'] }}" class="w-full p-2 border rounded">
+            </label>
+            <label class="block">
+                Valor da cota:
+                <input type="number" name="valor_cota" step="0.01" value="{{ presente['valor_cota'] }}" class="w-full p-2 border rounded">
+            </label>
+            <div class="flex justify-end">
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Salvar</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
