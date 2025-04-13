@@ -40,8 +40,6 @@
                 <img src="{{ presente['imagem_url'] }}" alt="Imagem do presente" class="w-full h-48 object-contain rounded mb-2">
                 <h2 class="text-xl font-semibold text-gray-800">{{ presente['nome'] }}</h2>
                 <p>Valor total: R$ {{ presente['valor_total'] }}</p>
-                <p>Valor da cota: R$ {{ presente['valor_cota'] }}</p>
-                <p>Cotas restantes: {{ presente['cotas_restantes'] }}</p>
 
                 {% if presente['cotas_restantes'] > 0 %}
                     <a href="{{ url_for('contribuir', item_id=presente['id']) }}" class="mt-4 inline-block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-center">
